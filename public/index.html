@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard ETL - Rendimiento Académico</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="title-container">
+                <i class="fa-solid fa-database logo-icon"></i>
+                <div>
+                    <h1>Data Mart Pipeline</h1>
+                    <p>Módulo Web de Monitoreo ETL (MySQL ➔ SQL Server)</p>
+                </div>
+            </div>
+            <button id="btn-run" class="btn-primary">
+                <i class="fa-solid fa-play"></i> Ejecutar ETL
+            </button>
+        </header>
+
+        <main>
+            <!-- Pipeline Visual -->
+            <section class="pipeline-section">
+                <h2><i class="fa-solid fa-diagram-project"></i> Flujo de Datos (Data Flow)</h2>
+                
+                <div class="pipeline-grid">
+                    <!-- FASE 1 -->
+                    <div class="node-group">
+                        <div class="node" id="node-Extract_MySQL">
+                            <div class="node-icon"><i class="fa-solid fa-server"></i></div>
+                            <div class="node-content">
+                                <h3>Extracción (MySQL)</h3>
+                                <span class="node-status text-pending">Pendiente</span>
+                            </div>
+                            <div class="node-badge" id="badge-Extract_MySQL"></div>
+                        </div>
+                        <div class="connector"><i class="fa-solid fa-arrow-right"></i></div>
+                        
+                        <div class="node" id="node-Transform_Data">
+                            <div class="node-icon"><i class="fa-solid fa-filter"></i></div>
+                            <div class="node-content">
+                                <h3>Transformación</h3>
+                                <span class="node-status text-pending">Pendiente</span>
+                            </div>
+                        </div>
+                        <div class="connector"><i class="fa-solid fa-arrow-right"></i></div>
+
+                        <div class="node" id="node-Clean_Dest">
+                            <div class="node-icon"><i class="fa-solid fa-broom"></i></div>
+                            <div class="node-content">
+                                <h3>Limpieza Destino</h3>
+                                <span class="node-status text-pending">Pendiente</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- FASE 2: Dimensiones -->
+                    <div class="connector-vertical"><i class="fa-solid fa-arrow-down"></i></div>
+                    
+                    <div class="node-group dimensions-group">
+                        <div class="node" id="node-Load_DimEstudiante">
+                            <div class="node-icon"><i class="fa-solid fa-users"></i></div>
+                            <div class="node-content">
+                                <h3>DimEstudiante</h3>
+                                <span class="node-status text-pending">Pendiente</span>
+                            </div>
+                            <div class="node-badge" id="badge-Load_DimEstudiante"></div>
+                        </div>
+                        
+                        <div class="node" id="node-Load_DimCurso">
+                            <div class="node-icon"><i class="fa-solid fa-book"></i></div>
+                            <div class="node-content">
+                                <h3>DimCurso</h3>
+                                <span class="node-status text-pending">Pendiente</span>
+                            </div>
+                            <div class="node-badge" id="badge-Load_DimCurso"></div>
+                        </div>
+
+                        <div class="node" id="node-Load_DimProfesor">
+                            <div class="node-icon"><i class="fa-solid fa-chalkboard-user"></i></div>
+                            <div class="node-content">
+                                <h3>DimProfesor</h3>
+                                <span class="node-status text-pending">Pendiente</span>
+                            </div>
+                            <div class="node-badge" id="badge-Load_DimProfesor"></div>
+                        </div>
+
+                        <div class="node" id="node-Load_DimGrado">
+                            <div class="node-icon"><i class="fa-solid fa-layer-group"></i></div>
+                            <div class="node-content">
+                                <h3>DimGradoSecc</h3>
+                                <span class="node-status text-pending">Pendiente</span>
+                            </div>
+                            <div class="node-badge" id="badge-Load_DimGrado"></div>
+                        </div>
+                        
+                        <div class="node" id="node-Load_DimTiempo">
+                            <div class="node-icon"><i class="fa-solid fa-calendar-days"></i></div>
+                            <div class="node-content">
+                                <h3>DimTiempo</h3>
+                                <span class="node-status text-pending">Pendiente</span>
+                            </div>
+                            <div class="node-badge" id="badge-Load_DimTiempo"></div>
+                        </div>
+                    </div>
+
+                    <!-- FASE 3: Hechos -->
+                    <div class="connector-vertical"><i class="fa-solid fa-arrow-down"></i></div>
+
+                    <div class="node-group">
+                        <div class="node" id="node-Mapping_Facts">
+                            <div class="node-icon"><i class="fa-solid fa-key"></i></div>
+                            <div class="node-content">
+                                <h3>Mapeo de SKs</h3>
+                                <span class="node-status text-pending">Pendiente</span>
+                            </div>
+                        </div>
+                        <div class="connector"><i class="fa-solid fa-arrow-right"></i></div>
+                        
+                        <div class="node highlight-node" id="node-Load_Hecho">
+                            <div class="node-icon"><i class="fa-solid fa-chart-line"></i></div>
+                            <div class="node-content">
+                                <h3>Carga Hechos</h3>
+                                <span class="node-status text-pending">Pendiente</span>
+                            </div>
+                            <div class="node-badge" id="badge-Load_Hecho"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Logs y Consola -->
+            <section class="logs-section">
+                <h2><i class="fa-solid fa-terminal"></i> Consola de Ejecución</h2>
+                <div class="console-box" id="console-output">
+                    <p class="log-info">[Sistema] Listo para ejecutar.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="main.js"></script>
+</body>
+</html>
