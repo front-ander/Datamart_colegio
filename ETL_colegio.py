@@ -11,6 +11,7 @@ from datetime import datetime
 import warnings
 import json
 import traceback
+import time
 
 warnings.filterwarnings('ignore')
 
@@ -25,9 +26,6 @@ MYSQL_CONFIG = {
 }
 SQLSERVER_CONFIG = 'mssql+pyodbc://localhost/Datamart_colegio?driver=ODBC+Driver+17+for+SQL+Server&Trusted_Connection=yes'
 
-mysql_engine = create_engine(f"mysql+pymysql://{MYSQL_CONFIG['user']}:{MYSQL_CONFIG['password']}@{MYSQL_CONFIG['host']}/{MYSQL_CONFIG['database']}")
-sqlserver_engine = create_engine(SQLSERVER_CONFIG)
-
 def emitir_evento(nodo, estado, mensaje, filas=0):
     """Genera un string JSON para enviar al frontend."""
     evento = {
@@ -39,8 +37,33 @@ def emitir_evento(nodo, estado, mensaje, filas=0):
     }
     return json.dumps(evento) + "\n"
 
+def connect_with_retry(engine_url, max_retries=3, delay=5):
+    """Intenta conectar a la base de datos con reintentos para resiliencia."""
+    engine = create_engine(engine_url)
+    last_exception = None
+    for attempt in range(1, max_retries + 1):
+        try:
+            with engine.connect() as conn:
+                pass # Solo probar la conexión
+            return engine
+        except Exception as e:
+            last_exception = e
+            time.sleep(delay)
+    raise Exception(f"Fallo de conexión tras {max_retries} intentos. Error: {str(last_exception)}")
+
 def ejecutar_etl():
     """Generador que ejecuta el ETL paso a paso y emite el progreso."""
+    
+    yield emitir_evento("System", "info", "Inicializando conexiones con resiliencia...")
+    
+    # Crear conexiones con reintentos
+    mysql_url = f"mysql+pymysql://{MYSQL_CONFIG['user']}:{MYSQL_CONFIG['password']}@{MYSQL_CONFIG['host']}/{MYSQL_CONFIG['database']}"
+    try:
+        mysql_engine = connect_with_retry(mysql_url)
+        sqlserver_engine = connect_with_retry(SQLSERVER_CONFIG)
+    except Exception as e:
+        yield emitir_evento("System", "error", f"Error crítico de conexión: {str(e)}")
+        return
     
     yield emitir_evento("System", "info", "Iniciando proceso ETL...")
 
