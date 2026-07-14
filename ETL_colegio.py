@@ -81,8 +81,9 @@ def ejecutar_etl():
         profesores_df = pd.read_sql("SELECT * FROM profesores", mysql_engine)
         grados_df = pd.read_sql("SELECT * FROM grados", mysql_engine)
         secciones_df = pd.read_sql("SELECT * FROM secciones", mysql_engine)
+        asignaciones_df = pd.read_sql("SELECT * FROM asignaciones_profesor", mysql_engine)
         
-        total_extraccion = len(personas_df) + len(estudiantes_df) + len(cursos_df) + len(matriculas_df) + len(notas_df) + len(asistencias_df) + len(profesores_df)
+        total_extraccion = len(personas_df) + len(estudiantes_df) + len(cursos_df) + len(matriculas_df) + len(notas_df) + len(asistencias_df) + len(profesores_df) + len(asignaciones_df)
         yield emitir_evento("Extract_MySQL", "success", "Extracción completada", total_extraccion)
     except Exception as e:
         yield emitir_evento("Extract_MySQL", "error", f"Error en extracción: {str(e)}")
@@ -196,6 +197,12 @@ def ejecutar_etl():
         
         hecho['id_estudiante_sk'] = hecho['estudiante_id'].map(mapa_estudiante)
         hecho['id_curso_sk'] = hecho['curso_id'].map(mapa_curso)
+        
+        # Obtener profesor_id uniendo con asignaciones_profesor
+        # notas tiene curso_id. matriculas tiene seccion_id.
+        if len(asignaciones_df) > 0:
+            asignaciones_simple = asignaciones_df[['curso_id', 'seccion_id', 'profesor_id']].drop_duplicates()
+            hecho = hecho.merge(asignaciones_simple, on=['curso_id', 'seccion_id'], how='left')
         
         hecho['id_profesor_sk'] = 1
         if len(mapa_profesor) > 0:

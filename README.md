@@ -1,78 +1,99 @@
-# 🚀 Data Mart y Dashboard BI de Rendimiento Académico
+# 🚀 Manual de Instalación y Despliegue - Dashboard BI Colegio
 
-Este proyecto es una solución integral de Inteligencia de Negocios (BI) diseñada para el análisis del rendimiento y asistencia de estudiantes. Abarca desde la generación de datos transaccionales, pasando por un proceso ETL robusto, hasta la visualización en tiempo real mediante un Dashboard Web interactivo.
+Este manual detalla paso a paso cómo preparar, configurar y ejecutar el **Pipeline ETL, la Base de Datos y el Dashboard Web** en una computadora nueva desde cero.
 
 ---
 
-## 📐 Arquitectura del Sistema
+## 🛠️ 1. Requisitos Previos (Instalación)
 
-La solución implementa el ciclo de vida completo de los datos:
+Asegúrate de tener instalados los siguientes programas en la nueva computadora:
+1. **Python 3.8 o superior** (Durante la instalación, asegúrate de marcar la casilla *"Add Python to PATH"*).
+2. **Node.js y npm** (Para compilar el frontend en React).
+3. **MySQL Server** (Puede ser a través de XAMPP, WAMP o MySQL Workbench) para la base de datos de origen.
+4. **Microsoft SQL Server** (Developer o Express) para la base de datos destino (Datamart).
+5. **ODBC Driver for SQL Server** (Necesario para que Python se comunique con SQL Server).
 
-```mermaid
-graph LR
-    subgraph Origen [OLTP - MySQL]
-        A[(Base de Datos\n'ccole')]
-    end
-    
-    subgraph Pipeline [Proceso ETL - Python]
-        B[Extracción Pandas] --> C[Transformación y SKs]
-    end
-    
-    subgraph Destino [Data Mart - SQL Server]
-        E[(Base de Datos\n'datamart_colegio')]
-    end
-    
-    subgraph Presentación [Dashboard Web]
-        F[FastAPI Backend] --> G[Frontend HTML/JS\nChart.js]
-    end
+---
 
-    A --> B
-    C --> E
-    E --> F
+## 🗄️ 2. Preparación de Bases de Datos
+
+### Base de Datos Origen (MySQL)
+1. Abre tu gestor de MySQL (ej. phpMyAdmin o Workbench).
+2. Crea una base de datos llamada `ccole` (o importa tu script de datos actual `ccole (2).sql` si lo tienes para restaurar los datos transaccionales de origen).
+3. Si la base de datos está vacía, ejecuta el archivo `generador_colegio.py` para llenarla con datos simulados:
+   ```bash
+   python generador_colegio.py
+   ```
+
+### Base de Datos Destino (SQL Server)
+1. Abre SQL Server Management Studio (SSMS).
+2. Abre y ejecuta el script **`Datamart_colegio.sql`**. 
+3. Se creará automáticamente la base de datos `Datamart_colegio` con su Modelo en Estrella (tablas de dimensiones y hechos).
+
+---
+
+## ⚙️ 3. Configuración de Credenciales
+
+Abre el archivo `ETL_colegio.py` y verifica que las credenciales coincidan con tu nueva computadora:
+
+```python
+# Configuración para MySQL
+MYSQL_CONFIG = {
+    'host': 'localhost',
+    'user': 'root',
+    'password': '', # Coloca la contraseña de MySQL de la nueva PC
+    'database': 'ccole'
+}
+
+# Configuración para SQL Server
+SQLSERVER_CONFIG = 'mssql+pyodbc://localhost/Datamart_colegio?driver=ODBC+Driver+17+for+SQL+Server&Trusted_Connection=yes'
+```
+*(Haz lo mismo en `api.py` si tiene configuraciones directas).*
+
+---
+
+## 📦 4. Instalación de Dependencias (Python y Node)
+
+### Dependencias del Backend (Python)
+Abre una terminal en la carpeta principal del proyecto (Datamart) e instala las librerías necesarias:
+```bash
+pip install pandas numpy sqlalchemy pymysql pyodbc fastapi uvicorn
+```
+
+### Dependencias del Frontend (React)
+Abre una terminal y navega hasta la carpeta del frontend:
+```bash
+cd dashboard-colegio
+npm install
 ```
 
 ---
 
-## 🛠️ Componentes Principales
+## 🔄 5. Compilar el Frontend y Ejecutar el ETL
 
-### 1. Generador de Datos (`generador_colegio.py`)
-Script en Python que actúa como el sistema transaccional (OLTP). Borra registros antiguos y genera miles de datos estructurados y realistas (nombres, cursos, notas, asistencias) simulando la operatividad diaria del colegio.
+### Paso A: Compilar la Página Web
+Para que el servidor de Python pueda mostrar la web, debes compilar React. Desde la carpeta `dashboard-colegio`, ejecuta:
+```bash
+npm run build
+```
+*(Gracias a la configuración en `vite.config.js`, esto automáticamente colocará los archivos finales en la carpeta `public/` de la raíz).*
 
-### 2. Proceso ETL (`ETL_colegio-mejora.py` / `ETL_colegio.py`)
-El motor de integración de datos construido con **Pandas** y **SQLAlchemy**.
-* **Extracción:** Obtiene datos del origen transaccional en MySQL.
-* **Transformación:** Normaliza textos, genera la Dimensión Tiempo automáticamente, pre-calcula métricas complejas (agrupación de asistencias) y asigna Llaves Subrogadas (SK).
-* **Carga:** Vacía limpiamente el SQL Server (manejando las Foreign Keys) e inyecta cientos de miles de registros analíticos en el Esquema de Estrella.
-
-### 3. Almacén de Datos (`Datamart_colegio.sql`)
-Un script T-SQL que construye un **Modelo en Estrella (Star Schema)** en SQL Server. Incluye las dimensiones (`DimEstudiante`, `DimCurso`, `DimProfesor`, etc.), la tabla de hechos (`HechoRendimientoAcademico`) y una vista analítica indexada (`vw_RendimientoAcademico`) optimizada para lecturas ultra rápidas.
-
-### 4. Dashboard Web (`api.py` + `public/`)
-* **Backend:** Desarrollado en **FastAPI**, expone los endpoints que consultan el Data Mart. Incluye optimizaciones SQL para consultas ultrarrápidas y uso de *Server-Sent Events (SSE)* para transmitir el log del ETL en vivo.
-* **Frontend:** Interfaz moderna con HTML5, CSS Variables y JavaScript puro. Utiliza **Chart.js** para la visualización de KPIs (Promedios, Asistencias Totales) y gráficas dinámicas de rendimiento.
+### Paso B: Ejecutar el ETL
+Abre una terminal en la raíz del proyecto (Datamart) y ejecuta el proceso ETL para migrar la información de MySQL a SQL Server:
+```bash
+python ETL_colegio.py
+```
+*(Espera a que el proceso indique que finalizó la carga de los Hechos).*
 
 ---
 
-## 💻 Tecnologías Utilizadas
+## 🌐 6. Levantar el Sistema y Ver el Dashboard
 
-* **Base de Datos:** MySQL (Origen), Microsoft SQL Server (Data Mart)
-* **Backend / ETL:** Python 3.8+, Pandas, NumPy, SQLAlchemy, FastAPI, Uvicorn
-* **Frontend:** HTML5, CSS3, Vanilla JavaScript, Chart.js, FontAwesome
+1. En la consola (ubicado en la raíz del proyecto `Datamart`), levanta el servidor backend con FastAPI:
+   ```bash
+   python -m uvicorn api:app --reload
+   ```
+2. Abre tu navegador web favorito (Chrome, Edge, etc.).
+3. Ingresa a la URL local: **👉 `http://127.0.0.1:8000`**
 
----
-
-## 📂 Estructura del Repositorio
-
-| Archivo / Carpeta | Descripción |
-| :--- | :--- |
-| **`public/`** | Carpeta con los estáticos del Dashboard (`index.html`, `style.css`, `main.js`). |
-| **`api.py`** | Servidor FastAPI que expone los datos al Dashboard. |
-| **`generador_colegio.py`** | Inyector de datos realistas a MySQL. |
-| **`ETL_colegio-mejora.py`** | Versión optimizada del script ETL (Manejo eficiente de asistencias y cruces). |
-| **`Datamart_colegio.sql`** | Estructura DDL para SQL Server. |
-| **`MANUAL_INSTALACION.md`** | Guía paso a paso para desplegar el proyecto. |
-
----
-
-## 🚀 Despliegue Rápido
-Para instrucciones detalladas sobre cómo clonar, instalar dependencias y levantar el servidor web, consulta el archivo [MANUAL_INSTALACION.md](MANUAL_INSTALACION.md).
+¡Listo! Tu sistema y dashboard estarán operando completamente en la nueva computadora. Si más adelante haces cambios en el código de React, solo recuerda volver a ejecutar `npm run build` en su respectiva carpeta.
